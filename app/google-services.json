@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1029919103831",
+    "firebase_url": "https://baitapandroid2-default-rtdb.firebaseio.com",
+    "project_id": "baitapandroid2",
+    "storage_bucket": "baitapandroid2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1029919103831:android:3e9dacf5356d59bbf8bc12",
+        "android_client_info": {
+          "package_name": "com.example.bai2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxCMid-j1WfnRT6xvOWLQk-2qXpjLDXQY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

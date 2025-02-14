@@ -1,5 +1,7 @@
 package com.example.bai2;
 
+import static android.content.ContentValues.TAG;
+
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -7,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -20,6 +23,11 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
@@ -33,31 +41,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
-    private RecyclerView recyclerView;
-    MessageAdapter adapter;
-
-    List<MessageModel> messageList; //bien toan cuc
-    AppCompatButton button,button_back,button_next;
-    TextView id,iduser,title,message, txt_dem;
-    Gson gson;
-    MessageModel messageModel = new MessageModel();
+    TextView id,iduser,title,message;
     private static final String CHANNEL_ID = "my_channel_id";
-    String json;
-    int dem=0;
-
-    void HienThi1PT(){
-        if(messageList==null) return;
-        else {
-            MessageModel messageModel = messageList.get(dem); // Lấy bài viết đầu tiên
-            id.setText(String.valueOf(messageModel.getId()));
-            iduser.setText(String.valueOf(messageModel.getUserId()));
-            title.setText(messageModel.getTitle());
-            message.setText(messageModel.getBody());
-            txt_dem.setText(""+(dem+1)+"/"+messageList.size());
-            showNotification(messageModel.getTitle(),messageModel.getBody());
-        }
-    }
-    Context myContext;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,79 +53,39 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        button_next = findViewById(R.id.button_next);
-        button_back = findViewById(R.id.button_back);
-        button = findViewById(R.id.button);
+
         id = findViewById(R.id.id1);
         title = findViewById(R.id.title1);
         message = findViewById(R.id.message1);
         iduser = findViewById(R.id.iduser1);
-        txt_dem = findViewById(R.id.txt_dem);
-        recyclerView = findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        button_back.setOnClickListener(new View.OnClickListener() {
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("message");
+
+        myRef.setValue("Hello, World!");
+        myRef.addValueEventListener(new ValueEventListener() {
             @Override
-            public void onClick(View v) {
-                lui1(v);
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                // This method is called once with the initial value and again
+                // whenever data at this location is updated.
+                String value = dataSnapshot.getValue(String.class);
+                MessageModel messageModel = new MessageModel();
+                Gson gson = new Gson();
+                messageModel = gson.fromJson(value,MessageModel.class);
+                id.setText(messageModel.getId());
+                iduser.setText(messageModel.getUserId());
+                title.setText(messageModel.getTitle());
+                message.setText(messageModel.getBody());
+                showNotification(messageModel.getTitle(),messageModel.getBody());
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                // Failed to read value
+                Log.w(TAG, "Failed to read value.", error.toException());
             }
         });
 
-        button_next.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                tien1(v);
-            }
-        });
-
-        gson = new Gson();
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                messageList = new ArrayList<>();
-
-                // Tạo Retrofit instance
-                Retrofit retrofit = new Retrofit.Builder()
-                        .baseUrl("https://jsonplaceholder.typicode.com/posts/") // URL chính xác của API
-                        .addConverterFactory(GsonConverterFactory.create()) // Dùng Gson để parse JSON
-                        .build();
-
-                Api apiService = retrofit.create(Api.class);
-                Call<List<MessageModel>> call = apiService.getJsonData(); // Sửa Call<List<MessageModule>>
-
-                call.enqueue(new Callback<List<MessageModel>>() {
-                    @Override
-                    public void onResponse(Call<List<MessageModel>> call, Response<List<MessageModel>> response) {
-                        if (response.isSuccessful() && response.body() != null) {
-                            messageList = response.body();
-                            dem=0;
-                            if (!messageList.isEmpty()) {
-                                HienThi1PT();
-                                MessageAdapter adapter;
-                                adapter = new MessageAdapter(getApplicationContext(), messageList);
-                                recyclerView.setAdapter(adapter);
-                                MessageModel messageModule = messageList.get(dem); // Lấy bài viết đầu tiên
-                                id.setText(String.valueOf(messageModule.getId()));
-                                iduser.setText(String.valueOf(messageModule.getUserId()));
-                                title.setText(messageModule.getTitle());
-                                message.setText(messageModule.getBody());
-                                dem++;
-                                showNotification(messageModule.getTitle(),messageModule.getBody());
-                            }
-                        } else {
-                            System.err.println("Response is empty or unsuccessful");
-                        }
-                    }
-
-
-                    @Override
-                    public void onFailure(Call<List<MessageModel>> call, Throwable t) {
-                        System.err.println("Error: " + t.getMessage());
-                    }
-                });
-            }
-        });
     }
     private void showNotification(String title, String content) {
         // Tạo NotificationManager
@@ -180,22 +125,4 @@ public class MainActivity extends AppCompatActivity {
         notificationManager.notify(1, builder.build());
     }
 
-    public void lui1(View view) {
-        if(messageList==null)return;
-        if(dem>0)dem--;
-        if(dem>=0)
-        {
-            HienThi1PT();
-        }
-
-    }
-
-    public void tien1(View view) {
-        if(messageList==null)return;
-        if(dem < messageList.size()-1)dem++;
-        if(dem < messageList.size())
-        {
-            HienThi1PT();
-        }
-    }
 }
